@@ -44,16 +44,27 @@ int main(int argc, char **argv) {
     }
     else
     {
-        perror("Connect error - no server available");
+        perror("Connect error - nohi"
+               " server available");
         return EXIT_FAILURE;
     }
+    printf ("Send message: ");
 
     do {
-        printf ("Send message: ");
         fgets (buffer, BUF, stdin);
         send(create_socket, buffer, strlen (buffer), 0);
-    }
-    while (strcmp (buffer, "quit\n") != 0);
+
+        if(strcmp (buffer, "QUIT\n") == 0){
+            break;
+        }
+
+        size=recv(create_socket,buffer,BUF-1, 0);
+        if (size>0)
+        {
+            buffer[size]= '\0';
+            printf("%s",buffer);
+        }
+    }while (strcmp (buffer, "QUIT\n") != 0);
     close (create_socket);
     return EXIT_SUCCESS;
 }
