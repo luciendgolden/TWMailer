@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
-project(TWMailer)
+project(client)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(TWMailer main.cpp)
+add_executable(client myclient.cpp)
