@@ -48,7 +48,6 @@ int main (void) {
             pthread_join(id, NULL);
         }
     }
-    close (new_socket);
     close (create_socket);
-    return EXIT_SUCCESS;
+    return 0;
 }

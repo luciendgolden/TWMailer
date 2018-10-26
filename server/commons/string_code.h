@@ -9,7 +9,8 @@ enum string_code {
     eSend,
     eList,
     eRead,
-    eDel
+    eDel,
+    eNone
 };
 
 #endif //SERVER_STRING_CODE_H
