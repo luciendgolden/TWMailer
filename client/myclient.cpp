@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 #include "request/request.h"
 
 void receive_from_server(int create_socket, char *buffer);
@@ -16,6 +16,7 @@ void receive_from_server(int create_socket, char *buffer);
 int main(int argc, char **argv) {
     int create_socket;
     char buffer[BUF];
+    char clientData[BUF];
     struct sockaddr_in address;
     int size;
 
@@ -50,23 +51,28 @@ int main(int argc, char **argv) {
            "QUIT: Logout des Clients\n");
 
     do {
-        printf("Enter command: ");
-        fgets(buffer, BUF, stdin);
 
-        if (strcmp(buffer, "SEND\n") == 0) {
-            request_send();
+        printf("Enter command: ");
+        fgets(clientData, BUF, stdin);
+
+        if (strcmp(clientData, "SEND\n") == 0) {
+            strcpy(buffer,request_send());
         }
-        else if (strcmp(buffer, "LIST\n") == 0) {
-            request_list();
+        else if (strcmp(clientData, "LIST\n") == 0) {
+            strcpy(buffer,request_list());
         }
-        else if (strcmp(buffer, "READ\n") == 0) {
-            request_read();
+        else if (strcmp(clientData, "READ\n") == 0) {
+            strcpy(buffer,request_read());
         }
-        else if (strcmp(buffer, "DEL\n") == 0) {
-            request_delete();
+        else if (strcmp(clientData, "DEL\n") == 0) {
+            strcpy(buffer,request_delete());
         }
-        else if (strcmp(buffer, "QUIT\n") == 0) {
+        else if (strcmp(clientData, "QUIT\n") == 0) {
+            strcpy(buffer,clientData);
             break;
+        } else {
+            printf("\nPLEASE ENTER VALID COMMAND TO CONTINUE:\nSEND--LIST--READ--DEL--QUIT\n");
+            continue;
         }
 
         send(create_socket, buffer, strlen(buffer), 0);
@@ -82,4 +88,5 @@ void receive_from_server(int create_socket, char *buffer) {
         buffer[size] = '\0';
         printf("%s", buffer);
     }
+
 }
