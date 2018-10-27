@@ -41,22 +41,25 @@ char *request_list() {
 
 char *request_send() {
     char myarray[642];
-    std::string final, _sender, _recipient, _subject, _message;
+    std::string final, sender, recipient, subject, message;
 
-    getUserInput(_sender, "Sender: ", 8);
-    getUserInput(_recipient, "Recipient: ", 8);
-    getUserInput(_subject, "Subject: ", 128);
+    getUserInput(sender, "Sender: ", 8);
+    getUserInput(recipient, "Recipient: ", 8);
+
+    std::cout<<"Subject: ";
+    std::getline(std::cin >> std::ws, subject);
 
     std::cout<<"Message: ";
-    std::getline(std::cin >> std::ws, _message);
+    std::getline(std::cin >> std::ws, message);
 
-    final.append(_sender);
+    final.append("SEND\n");
+    final.append(sender);
     final.append("\n");
-    final.append(_recipient);
+    final.append(recipient);
     final.append("\n");
-    final.append(_subject);
+    final.append(subject);
     final.append("\n");
-    final.append(_message);
+    final.append(message);
     final.append("\n.\n");
 
     strcpy(myarray, final.c_str());
