@@ -36,7 +36,13 @@ int main (void) {
 
     while (1) {
         printf("Waiting for connections...\n");
-        new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
+
+        if ((new_socket = accept(create_socket,
+                                    (struct sockaddr *) &cliaddress, &addrlen)) == -1) {
+            sleep(1);
+            continue;
+        }
+
         if (new_socket > 0)
         {
             printf ("Client connected from %s:%d...\n", inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port));

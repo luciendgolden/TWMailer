@@ -1,14 +1,22 @@
 #ifndef SERVER_MAIL_HANDLER_H
 #define SERVER_MAIL_HANDLER_H
 
+#define MAXLINE 1500
+
 #include <unistd.h>
 #include <errno.h>
+#include <string>
+#include <iostream>
+#include <sstream>
 #include "../commons/string_code.h"
 #include "../commons/messages.h"
 
 void send_data(int, const char *);
-void mail_to_send(int, char *);
+
+void mail_to_send(int client_sockfd, std::stringstream &strm);
+
 string_code hashit(char *);
+
 void respond_to_client(int sockfd, char buf[1024]);
 
 #define BUF 1024
@@ -20,13 +28,13 @@ void *handle_mail(void *param) {
 
     client_sockfd = *(int *) param;
 
-    while(1){
+    while (1) {
         memset(buf, 0, sizeof(buf));
         len = recv(client_sockfd, buf, (BUF - 1), 0);
 
         if (len > 0) {
-            printf("Message received: %s\n", buf);
-           respond_to_client(client_sockfd, buf);
+            printf("Message received: \n%s\n", buf);
+            respond_to_client(client_sockfd, buf);
         } else if (len == 0) {
             printf("Client closed remote socket\n");
             break;
@@ -41,10 +49,15 @@ void *handle_mail(void *param) {
 }
 
 void respond_to_client(int client_sockfd, char *data) {
-    send_data(client_sockfd, reply_code[6]);
-    switch (hashit(data)) {
+    char toCheck[4 + 1];
+    std::string str;
+    std::stringstream strm(data);
+    std::getline(strm, str);
+    strcpy(toCheck, str.c_str());
+
+    switch (hashit(toCheck)) {
         case eSend :
-            mail_to_send(client_sockfd, data);
+            mail_to_send(client_sockfd, strm);
             break;
         case eList :
             break;
@@ -58,8 +71,20 @@ void respond_to_client(int client_sockfd, char *data) {
 }
 
 
-void mail_to_send(int client_sockfd, char *data) {
-    // TODO - check if mail can be sent to the recipient
+void mail_to_send(int client_sockfd, std::stringstream &strm) {
+    // TODO - read further lines
+    // TODO - check if recipient directory
+    std::string sender, recipient, subject, message;
+
+    std::getline(strm,sender);
+    // TODO after finding the recipient also save sender in mail file
+
+    std::getline(strm,recipient);
+    // TODO find the recipient (the directory)
+    std::getline(strm,subject);
+    std::getline(strm,message);
+
+    send_data(client_sockfd, reply_code[6]);
 }
 
 // send data by socket
@@ -70,42 +95,12 @@ void send_data(int sockfd, const char *data) {
 }
 
 string_code hashit(char *inString) {
-    if (strcmp(inString, "SEND\n") == 0) return eSend;
-    if (strcmp(inString, "LIST\n") == 0) return eList;
-    if (strcmp(inString, "READ\n") == 0) return eRead;
-    if (strcmp(inString, "DEL\n") == 0) return eDel;
+    if (strcmp(inString, "SEND") == 0) return eSend;
+    if (strcmp(inString, "LIST") == 0) return eList;
+    if (strcmp(inString, "READ") == 0) return eRead;
+    if (strcmp(inString, "DEL") == 0) return eDel;
 
     return eNone;
-}
-
-// read a ‘\n‘ terminated line from a descriptor, char by char
-ssize_t readline(void *vptr, int fd, size_t maxlen) {
-    ssize_t n, rc;
-    char c, *ptr;
-    //ptr = vptr ;
-    for (n = 1; n < maxlen; n++) {
-        again:
-        if ((rc = read(fd, &c, 1)) == 1) {
-            *ptr++ = c;
-            if (c == '\n')
-                break;
-        } else if (rc == 0) {
-            if (n == 1)
-                return (0);
-            else break;
-        } else {
-            if (errno == EINTR)
-                goto again;
-            return (-1);
-        };
-    };
-// newline ist stored, like fgets()
-// EOF, no data read
-// EOF, some data was read
-// error, errno set by read()
-// null terminate like fgets()
-    *ptr = 0;
-    return (n);
 }
 
 #endif //SERVER_MAIL_HANDLER_H
