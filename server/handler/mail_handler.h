@@ -10,23 +10,26 @@
 #include <sstream>
 #include "../commons/string_code.h"
 #include "../commons/messages.h"
+#include "../commons/helper.h"
+#include "../commons/thread_args.h"
 
-void send_data(int, const char *);
+void send_data(int sockfd, const char *data);
 
-void mail_to_send(int client_sockfd, std::stringstream &strm);
+void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path);
 
 string_code hashit(char *);
 
-void respond_to_client(int sockfd, char buf[1024]);
+void respond_to_client(int client_sockfd, char *data, std::string path);
 
 #define BUF 1024
 
 // process mailing events
-void *handle_mail(void *param) {
+void *handle_mail(void *params) {
     int client_sockfd, len;
     char buf[BUF];
 
-    client_sockfd = *(int *) param;
+    std::string localSpoolpath = ((struct thread_args*)params)->path;
+    client_sockfd = *(((struct thread_args*)params)->new_socket);
 
     while (1) {
         memset(buf, 0, sizeof(buf));
@@ -34,7 +37,7 @@ void *handle_mail(void *param) {
 
         if (len > 0) {
             printf("Message received: \n%s\n", buf);
-            respond_to_client(client_sockfd, buf);
+            respond_to_client(client_sockfd, buf, localSpoolpath);
         } else if (len == 0) {
             printf("Client closed remote socket\n");
             break;
@@ -48,7 +51,7 @@ void *handle_mail(void *param) {
     return NULL;
 }
 
-void respond_to_client(int client_sockfd, char *data) {
+void respond_to_client(int client_sockfd, char *data, std::string path) {
     char toCheck[4 + 1];
     std::string str;
     std::stringstream strm(data);
@@ -57,7 +60,7 @@ void respond_to_client(int client_sockfd, char *data) {
 
     switch (hashit(toCheck)) {
         case eSend :
-            mail_to_send(client_sockfd, strm);
+            mail_to_send(client_sockfd, strm, path);
             break;
         case eList :
             break;
@@ -71,21 +74,29 @@ void respond_to_client(int client_sockfd, char *data) {
 }
 
 
-void mail_to_send(int client_sockfd, std::stringstream &strm) {
+void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) {
     // TODO - read further lines
     // TODO - check if recipient directory
     std::string sender, recipient, subject, message;
 
     std::getline(strm,sender);
-    // TODO after finding the recipient also save sender in mail file
-
     std::getline(strm,recipient);
     // TODO find the recipient (the directory)
     std::getline(strm,subject);
     std::getline(strm,message);
 
+    // TODO after finding the recipient also save sender in mail file
+    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 0){
+        std::cout<<"ES LEBT"<<std::endl;
+        create_user_dir(recipient);
+    }else {
+        std::cout<<"ES LEBT NICHT"<<std::endl;
+        create_message_file(sender,recipient,subject,message);
+    }
+
     send_data(client_sockfd, reply_code[6]);
 }
+
 
 // send data by socket
 void send_data(int sockfd, const char *data) {
