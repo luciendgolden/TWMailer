@@ -17,9 +17,11 @@ void send_data(int sockfd, const char *data);
 
 void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path);
 
-string_code hashit(char *);
+void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path);
 
 void respond_to_client(int client_sockfd, char *data, std::string path);
+
+string_code hashit(char *);
 
 #define BUF 1024
 
@@ -63,6 +65,7 @@ void respond_to_client(int client_sockfd, char *data, std::string path) {
             mail_to_send(client_sockfd, strm, path);
             break;
         case eList :
+            mails_to_list(client_sockfd, strm, path);
             break;
         case eRead :
             break;
@@ -87,18 +90,46 @@ void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) 
 
     // TODO after finding the recipient also save sender in mail file
     if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 1){
-        std::cout<<"ES LEBT"<<std::endl;
-        user_dir = strcat(const_cast<char *>(path.c_str()), recipient.c_str());
+        user_dir = path +"/"+recipient;
     }else {
         user_dir = create_user_dir(recipient, path);
-        std::cout<<"ES LEBT NICHT"<<std::endl;
     }
 
     //in jedem fall ein user_dir in der hand
     //create file
-    create_message_file(sender,recipient,subject,message);
+    if(create_message_file(user_dir, sender,recipient,subject,message))
+        send_data(client_sockfd, reply_code[6]);
+    else
+        send_data(client_sockfd, reply_code[28]);
+}
 
-    send_data(client_sockfd, reply_code[6]);
+void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path){
+    int count;
+    std::string response;
+    std::string all_subject;
+    std::ifstream is_counter;
+    std::string username;
+    std::string user_dir;
+    std::getline(strm,username);
+
+    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1){
+        user_dir = path +"/"+username;
+        is_counter.open(user_dir+"/counter");
+        is_counter>>count;
+        is_counter.close();
+
+
+        all_subject = std::to_string(count)+"\n";
+        all_subject.append(search_counter_file(user_dir.c_str(),"counter"));
+
+        response = all_subject;
+
+        send_data(client_sockfd, response.c_str());
+
+    }else{
+        send_data(client_sockfd, "0");
+    }
+
 }
 
 

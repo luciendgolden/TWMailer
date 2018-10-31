@@ -35,7 +35,8 @@ const char reply_code[][100]={
         {"250-mail \n250-PIPELINING \n250-AUTH LOGIN PLAIN\n250-AUTH=LOGIN PLAIN\n250 8BITMIME\r\n"},  //24
         {"334 dXNlcm5hbWU6\r\n"},  //25, "dXNlcm5hbWU6" is "username:"'s base64 code
         {"334 UGFzc3dvcmQ6\r\n"},  //26, "UGFzc3dvcmQ6" is "Password:"'s base64 code
-        {"235 Authentication successful\r\n"} //27
+        {"235 Authentication successful\r\n"}, //27
+        {"505 ERR\r\n"}  //28
 };
 
 #endif //SERVER_MESSAGES_H

@@ -33,15 +33,27 @@ char *request_read() {
 }
 
 char *request_list() {
-    std::string final = "LIST\n";
+    char myarray[16];
+    std::string final;
+    std::string username;
 
+    getUserInput(username, "Username: ", 8);
 
-    return &final[0];
+    //TODO - check the input !!!!!
+
+    final.append("LIST\n");
+    final.append(username);
+    final.append("\n");
+    strcpy(myarray, final.c_str());
+
+    return myarray;
 }
 
 char *request_send() {
     char myarray[642];
     std::string final, sender, recipient, subject, message;
+
+    //TODO - check the input!!!!
 
     getUserInput(sender, "Sender: ", 8);
     getUserInput(recipient, "Recipient: ", 8);
@@ -71,6 +83,7 @@ void getUserInput(std::string &str, std::string name, int length) {
     do {
         std::cout<<name;
         std::cin >> str;
+        fflush(stdout);
     } while (!validate(str, length));
 }
 

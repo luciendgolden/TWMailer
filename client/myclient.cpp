@@ -49,10 +49,12 @@ int main(int argc, char **argv) {
            "READ: Anzeigen einer bestimmten Nachricht für einen User.\n"
            "DEL: Löschen einer Nachricht eines Users.\n"
            "QUIT: Logout des Clients\n");
+    fflush(stdout);
 
     do {
 
         printf("Enter command: ");
+        fflush(stdout);
         fgets(clientData, BUF, stdin);
 
         if (strcmp(clientData, "SEND\n") == 0) {

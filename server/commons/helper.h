@@ -5,17 +5,24 @@
 #ifndef SERVER_HELPER_H
 #define SERVER_HELPER_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string>
 #include <dirent.h>
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
+#include <fstream>
 
-int check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind);
+int
+check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind);
 
 std::string create_user_dir(std::string recipient, std::string path);
 
-void create_message_file(std::string sender, std::string recipient, std::string subject, std::string message);
+bool create_message_file(std::string user_dir, std::string sender, std::string recipient, std::string subject,
+                         std::string message);
+
+std::string search_counter_file(const char *searchPath, char *myLocalFileToFind);
 
 
 /**
@@ -26,7 +33,8 @@ void create_message_file(std::string sender, std::string recipient, std::string 
  * @param myLocalFileToFind
  * @return
  */
-int check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind) {
+int
+check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind) {
     //struct for directory operations
     struct dirent *direntp;
     DIR *dirp;
@@ -74,25 +82,109 @@ int check_for_user_dir(const char *searchPath, int localRecursive, int localIgno
     return 0;
 }
 
+std::string search_counter_file(const char *searchPath, char *myLocalFileToFind) {
+    //struct for directory operations
+    struct dirent *direntp;
+    DIR *dirp;
+    std::ifstream is_readfromfile;
+    std::string result;
+    std::string subject;
+    std::string trash;
+    bool check_counter = false;
+
+    //errorhandling directory open
+    if (!(dirp = opendir(searchPath))) {
+        perror("Failed to open directory");
+        return NULL;
+    }
+
+    //dir opened, while until EOF dir
+    //readdir -> reads next/current file
+    while ((direntp = readdir(dirp)) != NULL) {
+
+        //comparing local file to find with the opened directories files
+        if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
+            check_counter = true;
+            continue;
+        }
+
+        if (check_counter) {
+            std::string myString = searchPath;
+            myString.append("/");
+            myString.append(direntp->d_name);
+
+            is_readfromfile.open(myString);
+            for (int i = 0; i < 2; i++) {
+                is_readfromfile >> trash;
+            }
+            is_readfromfile >> subject;
+            is_readfromfile.close();
+
+            result.append(subject);
+            result.append("\n");
+        }
+    }
+    //wait for file close
+    while ((closedir(dirp) == -1) && (errno == EINTR));
+
+    return result;
+}
+
 std::string create_user_dir(std::string recipient, std::string path) {
     char final[124] = "";
-     strcat(final, path.c_str());
-     strcat(final, "/");
-     strcat(final, recipient.c_str());
+    std::string result;
+    std::string id_file_name = "counter";
+    strcat(final, path.c_str());
+    strcat(final, "/");
+    strcat(final, recipient.c_str());
 
     if (mkdir(final, 0777) == -1) {
         std::cerr << "Error :  " << strerror(errno) << std::endl;
         fflush(stdout);
-    }
-    else {
-        std::cout << "Directory created";
-        fflush(stdout);
+
+        return NULL;
+    } else {
+        result = final;
+
+        std::ofstream outfile(result + "/" + id_file_name);
+        outfile << 0;
+        outfile.flush();
+        outfile.close();
+
+
+        return result;
     }
 
 }
 
-void create_message_file(std::string sender, std::string recipient, std::string subject, std::string message) {
+bool create_message_file(std::string user_dir, std::string sender, std::string recipient, std::string subject,
+                         std::string message) {
+    // TODO - Exception Handling?
+    int count;
+    std::ifstream is_counter;
+    std::ofstream out_counter;
 
+    is_counter.open(user_dir + "/counter");
+    is_counter >> count;
+    is_counter.close();
+    count++;
+    out_counter.open(user_dir + "/counter");
+    out_counter << count;
+    out_counter.flush();
+    out_counter.close();
+
+
+    std::string name = recipient + "_message" + std::to_string(count);
+    std::ofstream outfile(user_dir + "/" + name + ".txt");
+
+    outfile << sender << "\n";
+    outfile << recipient << "\n";
+    outfile << subject << "\n";
+    outfile << message << "\n";
+    outfile.flush();
+    outfile.close();
+
+    return true;
 }
 
 #endif //SERVER_HELPER_H
