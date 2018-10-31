@@ -77,7 +77,7 @@ void respond_to_client(int client_sockfd, char *data, std::string path) {
 void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) {
     // TODO - read further lines
     // TODO - check if recipient directory
-    std::string sender, recipient, subject, message;
+    std::string sender, recipient, subject, message, user_dir;
 
     std::getline(strm,sender);
     std::getline(strm,recipient);
@@ -86,13 +86,17 @@ void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) 
     std::getline(strm,message);
 
     // TODO after finding the recipient also save sender in mail file
-    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 0){
+    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 1){
         std::cout<<"ES LEBT"<<std::endl;
-        create_user_dir(recipient);
+        user_dir = strcat(const_cast<char *>(path.c_str()), recipient.c_str());
     }else {
+        user_dir = create_user_dir(recipient, path);
         std::cout<<"ES LEBT NICHT"<<std::endl;
-        create_message_file(sender,recipient,subject,message);
     }
+
+    //in jedem fall ein user_dir in der hand
+    //create file
+    create_message_file(sender,recipient,subject,message);
 
     send_data(client_sockfd, reply_code[6]);
 }

@@ -7,14 +7,15 @@
 
 #include <string>
 #include <dirent.h>
-#include <limits.h>
-#include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <sys/stat.h>
 
-bool check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind);
+int check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind);
 
-void create_user_dir(std::string basic_string);
+std::string create_user_dir(std::string recipient, std::string path);
 
-void create_message_file(std::string basic_string, std::string basicString, std::string subject, std::string message);
+void create_message_file(std::string sender, std::string recipient, std::string subject, std::string message);
 
 
 /**
@@ -25,7 +26,7 @@ void create_message_file(std::string basic_string, std::string basicString, std:
  * @param myLocalFileToFind
  * @return
  */
-bool check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind) {
+int check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCapitalization, char *myLocalFileToFind) {
     //struct for directory operations
     struct dirent *direntp;
     DIR *dirp;
@@ -44,36 +45,23 @@ bool check_for_user_dir(const char *searchPath, int localRecursive, int localIgn
 
             //comparing local file to find with the opened directories files
             if (strcasecmp(direntp->d_name, myLocalFileToFind) == 0) {
-
-                //mutex lock for printf (outputstream)
-                printf("++Process: %d -> Found File directory: %s/%s\n", getpid(), searchPath,
-                       direntp->d_name);
-                //flush to delete remaining buffer of outputstream
-                fflush(stdout);
-                //printf("%d:%s:%s%s\n\n",getpid(), direntp->d_name, myLocalSearchPath, direntp->d_name);
-                //wait for file close
                 while ((closedir(dirp) == -1) && (errno == EINTR));
 
-                return 0;
+                return 1;
             }
 
             //same without -i (not true)
         } else if (strcmp(myLocalFileToFind, direntp->d_name) == 0) {
             printf("++Process: %d -> Found File directory: %s/%s\n", getpid(), searchPath,
                    direntp->d_name);
-            //flush to delete remaining buffer of outputstream
             fflush(stdout);
-            //printf("%d:%s:%s%s\n\n",getpid(), direntp->d_name, myLocalSearchPath, direntp->d_name);
-            //wait for file close
             while ((closedir(dirp) == -1) && (errno == EINTR));
 
-            return 0;
+            return 1;
         }
 
         if (direntp->d_type == DT_DIR && localRecursive && direntp->d_name[0] != '.' && direntp->d_name[1] != '.') {
             char newPath[1024];
-            //strcpy(newPath, direntp->d_name);
-            //printf("Hello World: %s\n", newPath);
             snprintf(newPath, sizeof(newPath), "%s/%s", searchPath, direntp->d_name);
             return check_for_user_dir(newPath, localRecursive, localIgnoreCapitalization, myLocalFileToFind);
 
@@ -86,11 +74,24 @@ bool check_for_user_dir(const char *searchPath, int localRecursive, int localIgn
     return 0;
 }
 
-void create_user_dir(std::string basic_string) {
+std::string create_user_dir(std::string recipient, std::string path) {
+    char final[124] = "";
+     strcat(final, path.c_str());
+     strcat(final, "/");
+     strcat(final, recipient.c_str());
+
+    if (mkdir(final, 0777) == -1) {
+        std::cerr << "Error :  " << strerror(errno) << std::endl;
+        fflush(stdout);
+    }
+    else {
+        std::cout << "Directory created";
+        fflush(stdout);
+    }
 
 }
 
-void create_message_file(std::string basic_string, std::string basicString, std::string subject, std::string message) {
+void create_message_file(std::string sender, std::string recipient, std::string subject, std::string message) {
 
 }
 
