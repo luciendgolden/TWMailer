@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
     char clientData[BUF];
     struct sockaddr_in address;
     int size;
+    int trash;
 
     if (argc < 2) {
         printf("Usage: %s ServerAdresse\n", argv[0]);
@@ -52,7 +53,8 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     do {
-
+        //memset(&clientData, 0, BUF);
+        //fflush(stdin);
         printf("Enter command: ");
         fflush(stdout);
         fgets(clientData, BUF, stdin);
@@ -64,21 +66,26 @@ int main(int argc, char **argv) {
             strcpy(buffer,request_list());
         }
         else if (strcmp(clientData, "READ\n") == 0) {
-            strcpy(buffer,request_read());
+            strcpy(buffer,request_read_or_del("READ"));
         }
         else if (strcmp(clientData, "DEL\n") == 0) {
-            strcpy(buffer,request_delete());
+            strcpy(buffer,request_read_or_del("DEL"));
         }
         else if (strcmp(clientData, "QUIT\n") == 0) {
             strcpy(buffer,clientData);
             break;
-        } else {
+        } else if(strcmp(clientData, "\n") == 0){
+            continue;
+        }else {
             printf("\nPLEASE ENTER VALID COMMAND TO CONTINUE:\nSEND--LIST--READ--DEL--QUIT\n");
             continue;
         }
 
         send(create_socket, buffer, strlen(buffer), 0);
         receive_from_server(create_socket, buffer);
+
+        /* discard all characters up to and including newline */
+        while ((trash = getchar()) != '\n' && trash != EOF);
     } while (strcmp(buffer, "QUIT\n") != 0);
     close(create_socket);
     return EXIT_SUCCESS;

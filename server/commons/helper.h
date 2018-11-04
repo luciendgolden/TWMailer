@@ -22,6 +22,10 @@ std::string create_user_dir(std::string recipient, std::string path);
 bool create_message_file(std::string user_dir, std::string sender, std::string recipient, std::string subject,
                          std::string message);
 
+std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int msg_num);
+
+std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num)
+
 std::string search_counter_file(const char *searchPath, char *myLocalFileToFind);
 
 
@@ -82,7 +86,61 @@ check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCa
     return 0;
 }
 
+
 std::string search_counter_file(const char *searchPath, char *myLocalFileToFind) {
+    //struct for directory operations
+    struct dirent *direntp;
+    int msg_num =1; //counting the messages found for output 1:
+    DIR *dirp;
+    std::ifstream is_readfromfile;
+    std::string result;
+    std::string subject;
+    std::string trash;
+    bool check_counter = false;
+
+    //errorhandling directory open
+    if (!(dirp = opendir(searchPath))) {
+        perror("Failed to open directory");
+        return NULL;
+    }
+
+    //dir opened, while until EOF dir
+    //readdir -> reads next/current file
+    while ((direntp = readdir(dirp)) != NULL) {
+
+        //comparing local file to find with the opened directories files
+        // ignoe ".", ".." and "counter" files
+        if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
+            check_counter = true;
+            continue;
+        }
+
+        if (check_counter) {
+            std::string myString = searchPath;
+            myString.append("/");
+            myString.append(direntp->d_name);
+
+            //ignore trash from file because we only need the subject (line3)
+            is_readfromfile.open(myString);
+            for (int i = 0; i < 2; i++) {
+                is_readfromfile >> trash;
+            }
+            is_readfromfile >> subject;
+            is_readfromfile.close();
+
+            result.append(std::to_string(msg_num)+": ");
+            result.append(subject);
+            result.append("\n");
+            msg_num++;
+        }
+    }
+    //wait for file close
+    while ((closedir(dirp) == -1) && (errno == EINTR));
+
+    return result;
+}
+
+std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int msg_num){
     //struct for directory operations
     struct dirent *direntp;
     DIR *dirp;
@@ -102,26 +160,86 @@ std::string search_counter_file(const char *searchPath, char *myLocalFileToFind)
     //readdir -> reads next/current file
     while ((direntp = readdir(dirp)) != NULL) {
 
-        //comparing local file to find with the opened directories files
+        //comparing local file to find with the opened directories file
+        // ignoe ".", ".." and "counter" files
         if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
             check_counter = true;
             continue;
         }
 
         if (check_counter) {
-            std::string myString = searchPath;
-            myString.append("/");
-            myString.append(direntp->d_name);
+            if(msg_num==1){
+                //do da magic
+                //get file
+                std::string line;
+                std::string myString = searchPath;
+                myString.append("/");
+                myString.append(direntp->d_name);
 
-            is_readfromfile.open(myString);
-            for (int i = 0; i < 2; i++) {
-                is_readfromfile >> trash;
+                is_readfromfile.open(myString);
+
+                while(!is_readfromfile.eof()){
+                    getline(is_readfromfile,line);
+                    result.append(line+"\n");
+                    line = "";
+                }
+                is_readfromfile.close();
+                break;
+            } else{
+                msg_num--;
+                continue;
             }
-            is_readfromfile >> subject;
-            is_readfromfile.close();
+        }
+    }
+    //wait for file close
+    while ((closedir(dirp) == -1) && (errno == EINTR));
 
-            result.append(subject);
-            result.append("\n");
+    return result;
+}
+
+
+std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num){
+    //struct for directory operations
+    struct dirent *direntp;
+    DIR *dirp;
+    std::ifstream is_readfromfile;
+    std::string result;
+    std::string subject;
+    std::string trash;
+    bool check_counter = false;
+
+    //errorhandling directory open
+    if (!(dirp = opendir(searchPath))) {
+        perror("Failed to open directory");
+        return NULL;
+    }
+
+    //dir opened, while until EOF dir
+    //readdir -> reads next/current file
+    while ((direntp = readdir(dirp)) != NULL) {
+
+        //comparing local file to find with the opened directories file
+        // ignoe ".", ".." and "counter" files
+        if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
+            check_counter = true;
+            continue;
+        }
+
+        if (check_counter) {
+            if(msg_num==1){
+                //do da magic
+                //get file
+                std::string line;
+                std::string myString = searchPath;
+                myString.append("/");
+                myString.append(direntp->d_name);
+
+                return myString;
+                break;
+            } else{
+                msg_num--;
+                continue;
+            }
         }
     }
     //wait for file close
@@ -180,7 +298,7 @@ bool create_message_file(std::string user_dir, std::string sender, std::string r
     outfile << sender << "\n";
     outfile << recipient << "\n";
     outfile << subject << "\n";
-    outfile << message << "\n";
+    outfile << message;
     outfile.flush();
     outfile.close();
 
