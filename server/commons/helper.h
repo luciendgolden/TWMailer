@@ -20,11 +20,11 @@ check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCa
 std::string create_user_dir(std::string recipient, std::string path);
 
 bool create_message_file(std::string user_dir, std::string sender, std::string recipient, std::string subject,
-                         std::string message);
+                         std::stringstream &strm);
 
 std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int msg_num);
 
-std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num)
+std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num);
 
 std::string search_counter_file(const char *searchPath, char *myLocalFileToFind);
 
@@ -125,7 +125,8 @@ std::string search_counter_file(const char *searchPath, char *myLocalFileToFind)
             for (int i = 0; i < 2; i++) {
                 is_readfromfile >> trash;
             }
-            is_readfromfile >> subject;
+
+            std::getline(is_readfromfile >> std::ws, subject);
             is_readfromfile.close();
 
             result.append(std::to_string(msg_num)+": ");
@@ -235,7 +236,6 @@ std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind
                 myString.append(direntp->d_name);
 
                 return myString;
-                break;
             } else{
                 msg_num--;
                 continue;
@@ -245,7 +245,7 @@ std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind
     //wait for file close
     while ((closedir(dirp) == -1) && (errno == EINTR));
 
-    return result;
+    return NULL;
 }
 
 std::string create_user_dir(std::string recipient, std::string path) {
@@ -276,9 +276,10 @@ std::string create_user_dir(std::string recipient, std::string path) {
 }
 
 bool create_message_file(std::string user_dir, std::string sender, std::string recipient, std::string subject,
-                         std::string message) {
+                         std::stringstream &strm) {
     // TODO - Exception Handling?
     int count;
+    std::string line;
     std::ifstream is_counter;
     std::ofstream out_counter;
 
@@ -298,7 +299,13 @@ bool create_message_file(std::string user_dir, std::string sender, std::string r
     outfile << sender << "\n";
     outfile << recipient << "\n";
     outfile << subject << "\n";
-    outfile << message;
+
+    while(!strm.eof()){
+        getline(strm,line);
+        outfile << line+"\n";
+        line = "";
+    }
+
     outfile.flush();
     outfile.close();
 

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <regex>
 
 char *request_send();
 
@@ -22,7 +23,7 @@ bool validate(std::string str, int length);
 
 char *request_read_or_del(std::string option) {
     // unsigned int + username + \n + \0
-    char myarray[32+8+4+1];
+    char myarray[32 + 8 + 4 + 1];
     // 2 - 4 byte
     // 0 to 65,535 or
     // 0 to 4,294,967,295
@@ -33,14 +34,14 @@ char *request_read_or_del(std::string option) {
     getUserInput(username, "Username: ", 8);
 
 
-    std::cout<<"Nachrichten-Nummer: ";
-    while(!(std::cin >> msg_number)){
-        std::cout<<"Nachrichten-Nummer: ";
+    std::cout << "Nachrichten-Nummer: ";
+    while (!(std::cin >> msg_number)) {
+        std::cout << "Nachrichten-Nummer: ";
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    final.append(option+"\n");
+    final.append(option + "\n");
     final.append(username);
     final.append("\n");
     final.append(std::to_string(msg_number));
@@ -51,7 +52,7 @@ char *request_read_or_del(std::string option) {
 }
 
 char *request_list() {
-    char myarray[15+1];
+    char myarray[15 + 1];
     std::string final;
     std::string username;
 
@@ -76,11 +77,8 @@ char *request_send() {
     getUserInput(sender, "Sender: ", 8);
     getUserInput(recipient, "Recipient: ", 8);
 
-    std::cout<<"Subject: ";
+    std::cout << "Subject: ";
     std::getline(std::cin >> std::ws, subject);
-
-    std::cout<<"Message: ";
-    std::getline(std::cin >> std::ws, message);
 
     final.append("SEND\n");
     final.append(sender);
@@ -88,9 +86,15 @@ char *request_send() {
     final.append(recipient);
     final.append("\n");
     final.append(subject);
-    final.append("\n");
-    final.append(message);
-    final.append("\n.\n");
+
+    std::cout << "Message: ";
+
+    while (getline(std::cin, message)) {
+        if (message == ".") {
+            break;
+        }
+        final += "\n" + message;
+    }
 
     strcpy(myarray, final.c_str());
 
@@ -99,18 +103,24 @@ char *request_send() {
 
 void getUserInput(std::string &str, std::string name, int length) {
     do {
-        std::cout<<name;
+        std::cout << name;
         std::cin >> str;
         fflush(stdout);
     } while (!validate(str, length));
 }
 
 bool validate(std::string str, int length) {
-    if (str.length() > length) {
-        return false;
-    }
 
-    return true;
+    std::regex rx("(if17b[0-9]{3})");
+    std::match_results<std::string::const_iterator> mr;
+    std::regex_search(str, mr, rx);
+
+    if (!(str.length() > length) && (std::regex_match (str, std::regex("if17b[0-9]{3}")))) {
+        return true;
+    }
+    else
+        return false;
 }
+
 
 #endif //CLIENT_REQUEST_H

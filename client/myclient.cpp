@@ -74,8 +74,6 @@ int main(int argc, char **argv) {
         else if (strcmp(clientData, "QUIT\n") == 0) {
             strcpy(buffer,clientData);
             break;
-        } else if(strcmp(clientData, "\n") == 0){
-            continue;
         }else {
             printf("\nPLEASE ENTER VALID COMMAND TO CONTINUE:\nSEND--LIST--READ--DEL--QUIT\n");
             continue;

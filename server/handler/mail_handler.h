@@ -34,8 +34,8 @@ void *handle_mail(void *params) {
     int client_sockfd, len;
     char buf[BUF];
 
-    std::string localSpoolpath = ((struct thread_args*)params)->path;
-    client_sockfd = *(((struct thread_args*)params)->new_socket);
+    std::string localSpoolpath = ((struct thread_args *) params)->path;
+    client_sockfd = *(((struct thread_args *) params)->new_socket);
 
     while (1) {
         memset(buf, 0, sizeof(buf));
@@ -86,103 +86,129 @@ void respond_to_client(int client_sockfd, char *data, std::string path) {
 void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) {
     // TODO - read further lines
     // TODO - check if recipient directory
-    std::string sender, recipient, subject, message, user_dir;
+    std::string sender;
+    std::string recipient;
+    std::string subject;
+    std::string message;
+    std::string user_dir;
+    std::string line;
 
-    std::getline(strm,sender);
-    std::getline(strm,recipient);
+    std::getline(strm, sender);
+    std::getline(strm, recipient);
     // TODO find the recipient (the directory)
-    std::getline(strm,subject);
-    std::getline(strm,message);
+    std::getline(strm, subject);
 
     // TODO after finding the recipient also save sender in mail file
-    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 1){
-        user_dir = path +"/"+recipient;
-    }else {
+    if (check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 1) {
+        user_dir = path + "/" + recipient;
+    } else {
         user_dir = create_user_dir(recipient, path);
     }
 
     //in jedem fall ein user_dir in der hand
     //create file
-    if(create_message_file(user_dir, sender,recipient,subject,message))
+    if (create_message_file(user_dir, sender, recipient, subject, strm))
         send_data(client_sockfd, reply_code[6]);
     else
         send_data(client_sockfd, reply_code[28]);
 }
 
-void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path){
+void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path) {
     int count;
     std::string response;
     std::string all_subject;
     std::ifstream is_counter;
     std::string username;
     std::string user_dir;
-    std::getline(strm,username);
+    std::getline(strm, username);
 
-    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1){
-        user_dir = path +"/"+username;
-        is_counter.open(user_dir+"/counter");
-        is_counter>>count;
+    if (check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1) {
+        user_dir = path + "/" + username;
+        is_counter.open(user_dir + "/counter");
+        is_counter >> count;
         is_counter.close();
 
-        all_subject = std::to_string(count)+"\n";
+        all_subject = std::to_string(count) + "\n";
         /*
          * parameter user_dir: user_directory in spool
          * parameter counter: ignore the counter file as well as the "." and ".." dir in directory
          */
-        all_subject.append(search_counter_file(user_dir.c_str(),"counter"));
+        all_subject.append(search_counter_file(user_dir.c_str(), "counter"));
 
         response = all_subject;
 
         send_data(client_sockfd, response.c_str());
 
-    }else{
+    } else {
         send_data(client_sockfd, "0");
     }
 
 }
 
-void mails_to_read(int client_sockfd, std::stringstream &strm, std::string path){
+void mails_to_read(int client_sockfd, std::stringstream &strm, std::string path) {
     std::string response;
     std::string msg_number;
     std::string username;
     std::string user_dir;
     int msg_num;
 
-    std::getline(strm,username);
-    std::getline(strm,msg_number);
+    std::getline(strm, username);
+    std::getline(strm, msg_number);
     msg_num = std::atoi(msg_number.c_str());
 
-    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1){
-        user_dir = path +"/"+username;
+    if (check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1) {
+        user_dir = path + "/" + username;
         response.append(reply_code[6]);
-        response.append(get_msg_content(user_dir.c_str(),"counter",msg_num));
+        response.append(get_msg_content(user_dir.c_str(), "counter", msg_num));
         send_data(client_sockfd, response.c_str());
-    }else{
+    } else {
         send_data(client_sockfd, reply_code[28]);
     }
 }
 
-void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path){
+void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path) {
+    int msg_num;
+    int count;
     std::string response;
     std::string msg_number;
     std::string username;
     std::string user_dir;
     std::string file_path_to_del;
-    int msg_num;
+    std::ifstream is_counter;
 
-    std::getline(strm,username);
-    std::getline(strm,msg_number);
+    std::getline(strm, username);
+    std::getline(strm, msg_number);
     msg_num = std::atoi(msg_number.c_str());
 
-    if(check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1){
-        user_dir = path +"/"+username;
-        file_path_to_del = get_msg_content(user_dir.c_str(),"counter",msg_num);
+    // find directory
+    if (check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(username.c_str())) == 1) {
+        user_dir = path + "/" + username;
 
-        if( remove( "myfile.txt" ) != 0 )
+        is_counter.open(user_dir + "/counter");
+        is_counter >> count;
+        is_counter.close();
+
+        if (msg_num <= count && msg_num != 0) {
+            file_path_to_del = get_file_name_to_del(user_dir.c_str(), "counter", msg_num);
+        } else {
             send_data(client_sockfd, reply_code[28]);
-        else
+            return;
+        }
+
+        if (remove(file_path_to_del.c_str()) != 0) {
+            send_data(client_sockfd, reply_code[28]);
+        } else {
             send_data(client_sockfd, reply_code[6]);
-    }else{
+            // decrement counter in counter file
+            std::ofstream out_counter;
+
+            count--;
+            out_counter.open(user_dir + "/counter");
+            out_counter << count;
+            out_counter.flush();
+            out_counter.close();
+        }
+    } else {
         send_data(client_sockfd, reply_code[28]);
     }
 }
