@@ -6,60 +6,71 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#define BUF 1024
-#define PORT 6543
+#include <pthread.h>
+#include "handler/mail_handler.h"
+#include "commons/thread_args.h"
 
-int main (void) {
+#define BUF 1024
+//#define PORT 6543
+
+
+
+int main(int argc, char **argv) {
+    std::string spoolPath;
+    struct thread_args *Thread_input = (struct thread_args *)malloc(sizeof(struct thread_args));
+
+    int PORT;
+    if (argc != 3) {
+        std::cout << "USAGE: PORT Filedirectory" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        PORT = atoi(argv[1]);
+        spoolPath = argv[2];
+    }
+
     int create_socket, new_socket;
     socklen_t addrlen;
     char buffer[BUF];
     int size;
     struct sockaddr_in address, cliaddress;
 
-    create_socket = socket (AF_INET, SOCK_STREAM, 0);
+    create_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-    memset(&address,0,sizeof(address));
+    memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons (PORT);
 
-    if (bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0) {
+    if (bind(create_socket, (struct sockaddr *) &address, sizeof(address)) != 0) {
         perror("bind error");
         return EXIT_FAILURE;
     }
-    listen (create_socket, 5);
+    listen(create_socket, 5);
 
-    addrlen = sizeof (struct sockaddr_in);
+    addrlen = sizeof(struct sockaddr_in);
 
     while (1) {
         printf("Waiting for connections...\n");
-        new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
-        if (new_socket > 0)
-        {
-            printf ("Client connected from %s:%d...\n", inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port));
-            strcpy(buffer,"Welcome to myserver, Please enter your command:\n");
-            send(new_socket, buffer, strlen(buffer),0);
+
+        if ((new_socket = accept(create_socket,
+                                 (struct sockaddr *) &cliaddress, &addrlen)) == -1) {
+            sleep(1);
+            continue;
         }
-        do {
-            size = recv (new_socket, buffer, BUF-1, 0);
-            if( size > 0)
-            {
-                buffer[size] = '\0';
-                printf ("Message received: %s\n", buffer);
-            }
-            else if (size == 0)
-            {
-                printf("Client closed remote socket\n");
-                break;
-            }
-            else
-            {
-                perror("recv error");
-                return EXIT_FAILURE;
-            }
-        } while (strncmp (buffer, "quit", 4)  != 0);
-        close (new_socket);
+
+        if (new_socket > 0) {
+            printf("Client connected from %s:%d...\n", inet_ntoa(cliaddress.sin_addr), ntohs(cliaddress.sin_port));
+            strcpy(buffer, "Welcome to myserver, Please enter your command:\n");
+            send(new_socket, buffer, strlen(buffer), 0);
+
+            Thread_input->new_socket = &new_socket;
+            Thread_input->path = spoolPath.c_str();
+
+            pthread_t id;
+            pthread_create(&id, NULL, handle_mail, (void *)Thread_input);
+            pthread_join(id, NULL);
+        }
     }
-    close (create_socket);
-    return EXIT_SUCCESS;
+    close(create_socket);
+    return 0;
 }
