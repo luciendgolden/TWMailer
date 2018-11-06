@@ -90,13 +90,13 @@ check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCa
 std::string search_counter_file(const char *searchPath, char *myLocalFileToFind) {
     //struct for directory operations
     struct dirent *direntp;
-    int msg_num =1; //counting the messages found for output 1:
+    int msg_num = 1; //counting the messages found for output 1:
     DIR *dirp;
     std::ifstream is_readfromfile;
     std::string result;
     std::string subject;
     std::string trash;
-    bool check_counter = false;
+    std::string mystring;
 
     //errorhandling directory open
     if (!(dirp = opendir(searchPath))) {
@@ -110,29 +110,27 @@ std::string search_counter_file(const char *searchPath, char *myLocalFileToFind)
 
         //comparing local file to find with the opened directories files
         // ignoe ".", ".." and "counter" files
-        if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
-            check_counter = true;
-            continue;
-        }
+        mystring = direntp->d_name;
+        if (mystring.size() >= 16) {
+            if (strcmp(mystring.substr(9, 7).c_str(), "message") == 0) {
+                std::string myString = searchPath;
+                myString.append("/");
+                myString.append(direntp->d_name);
 
-        if (check_counter) {
-            std::string myString = searchPath;
-            myString.append("/");
-            myString.append(direntp->d_name);
+                //ignore trash from file because we only need the subject (line3)
+                is_readfromfile.open(myString);
+                for (int i = 0; i < 2; i++) {
+                    is_readfromfile >> trash;
+                }
 
-            //ignore trash from file because we only need the subject (line3)
-            is_readfromfile.open(myString);
-            for (int i = 0; i < 2; i++) {
-                is_readfromfile >> trash;
+                std::getline(is_readfromfile >> std::ws, subject);
+                is_readfromfile.close();
+
+                result.append(std::to_string(msg_num) + ": ");
+                result.append(subject);
+                result.append("\n");
+                msg_num++;
             }
-
-            std::getline(is_readfromfile >> std::ws, subject);
-            is_readfromfile.close();
-
-            result.append(std::to_string(msg_num)+": ");
-            result.append(subject);
-            result.append("\n");
-            msg_num++;
         }
     }
     //wait for file close
@@ -141,7 +139,7 @@ std::string search_counter_file(const char *searchPath, char *myLocalFileToFind)
     return result;
 }
 
-std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int msg_num){
+std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int msg_num) {
     //struct for directory operations
     struct dirent *direntp;
     DIR *dirp;
@@ -169,7 +167,7 @@ std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int
         }
 
         if (check_counter) {
-            if(msg_num==1){
+            if (msg_num == 1) {
                 //do da magic
                 //get file
                 std::string line;
@@ -179,14 +177,14 @@ std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int
 
                 is_readfromfile.open(myString);
 
-                while(!is_readfromfile.eof()){
-                    getline(is_readfromfile,line);
-                    result.append(line+"\n");
+                while (!is_readfromfile.eof()) {
+                    getline(is_readfromfile, line);
+                    result.append(line + "\n");
                     line = "";
                 }
                 is_readfromfile.close();
                 break;
-            } else{
+            } else {
                 msg_num--;
                 continue;
             }
@@ -199,7 +197,7 @@ std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int
 }
 
 
-std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num){
+std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind, int msg_num) {
     //struct for directory operations
     struct dirent *direntp;
     DIR *dirp;
@@ -227,7 +225,7 @@ std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind
         }
 
         if (check_counter) {
-            if(msg_num==1){
+            if (msg_num == 1) {
                 //do da magic
                 //get file
                 std::string line;
@@ -236,7 +234,7 @@ std::string get_file_name_to_del(const char *searchPath, char *myLocalFileToFind
                 myString.append(direntp->d_name);
 
                 return myString;
-            } else{
+            } else {
                 msg_num--;
                 continue;
             }
@@ -300,9 +298,9 @@ bool create_message_file(std::string user_dir, std::string sender, std::string r
     outfile << recipient << "\n";
     outfile << subject << "\n";
 
-    while(!strm.eof()){
-        getline(strm,line);
-        outfile << line+"\n";
+    while (!strm.eof()) {
+        getline(strm, line);
+        outfile << line + "\n";
         line = "";
     }
 
