@@ -11,7 +11,7 @@
 void receive_from_server(int create_socket, char *buffer);
 
 #define BUF 1024
-#define PORT 6543
+#define PORT 6540
 
 int main(int argc, char **argv) {
     int create_socket;
