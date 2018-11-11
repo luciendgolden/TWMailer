@@ -11,9 +11,7 @@
 #include "commons/thread_args.h"
 
 #define BUF 1024
-//#define PORT 6543
-
-
+//#define PORT 6540
 
 int main(int argc, char **argv) {
     std::string spoolPath;
@@ -21,7 +19,7 @@ int main(int argc, char **argv) {
 
     int PORT;
     if (argc != 3) {
-        std::cout << "USAGE: PORT Filedirectory" << std::endl;
+        std::cout << "USAGE: PORT SPOOL_FILE_PATH" << std::endl;
         exit(EXIT_FAILURE);
     } else {
         PORT = atoi(argv[1]);

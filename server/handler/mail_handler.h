@@ -217,6 +217,7 @@ void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path) 
 // send data by socket
 void send_data(int sockfd, const char *data) {
     if (data != NULL) {
+        //todo - return value
         send(sockfd, data, strlen(data), 0);
     }
 }

@@ -11,7 +11,7 @@
 void receive_from_server(int create_socket, char *buffer);
 
 #define BUF 1024
-#define PORT 6540
+//#define PORT 6540 (argv[2])
 
 int main(int argc, char **argv) {
     int create_socket;
@@ -20,10 +20,13 @@ int main(int argc, char **argv) {
     struct sockaddr_in address;
     int size;
     int trash;
+    int PORT;
 
-    if (argc < 2) {
-        printf("Usage: %s ServerAdresse\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s SERVER_ADDRESS PORT\n", argv[0]);
         exit(EXIT_FAILURE);
+    } else {
+        PORT = atoi(argv[2]);
     }
 
     if ((create_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
