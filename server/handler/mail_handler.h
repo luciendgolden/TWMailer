@@ -34,6 +34,9 @@ void *handle_mail(void *params) {
     int client_sockfd, len;
     char buf[BUF];
 
+    std::string loged_in_sender;
+    bool loged_in;
+
     std::string localSpoolpath = ((struct thread_args *) params)->path;
     client_sockfd = *(((struct thread_args *) params)->new_socket);
 
@@ -43,7 +46,33 @@ void *handle_mail(void *params) {
 
         if (len > 0) {
             printf("Message received: \n%s\n", buf);
-            respond_to_client(client_sockfd, buf, localSpoolpath);
+
+            if(!loged_in) {
+                //check buffer credentials with ldap-server
+                std::string username;
+                std::string password;
+                std::string login;
+                std::stringstream strm(buf);
+                std::getline(strm, login);
+                std::getline(strm, username);
+                std::getline(strm, password);
+
+
+                //
+
+                if(std::strcmp(username.c_str(),"if17b052") == 0 &&
+                      std::strcmp(password.c_str(), "abcd") == 0  ){
+                    //success
+                    send_data(client_sockfd, reply_code[6]);
+                    loged_in=true;
+                    continue;
+                } else {
+                    //err
+                    send_data(client_sockfd, reply_code[28]);
+                }
+            } else {
+            // if user loged in give sender
+                respond_to_client(client_sockfd, buf, localSpoolpath);}
         } else if (len == 0) {
             printf("Client closed remote socket\n");
             break;
@@ -97,7 +126,6 @@ void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) 
     std::getline(strm, recipient);
     // TODO find the recipient (the directory)
     std::getline(strm, subject);
-
     // TODO after finding the recipient also save sender in mail file
     if (check_for_user_dir(path.c_str(), 0, 1, const_cast<char *>(recipient.c_str())) == 1) {
         user_dir = path + "/" + recipient;

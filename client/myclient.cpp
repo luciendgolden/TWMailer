@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     int PORT;
 
     if (argc != 3) {
-        printf("Usage: %s SERVER_ADDRESS PORT\n", argv[0]);
+        printf("Usage: %s IP_ADDRESS PORT\n", argv[0]);
         exit(EXIT_FAILURE);
     } else {
         PORT = atoi(argv[2]);
@@ -47,6 +47,39 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    // login user
+    // if user is not loged in
+    while (1) {
+        std::string result_code;
+
+        printf("Please Log in: ");
+        fflush(stdout);
+        fgets(clientData, BUF, stdin);
+
+        if (strcmp(clientData, "LOGIN\n") == 0) {
+            strcpy(buffer, request_login());
+
+
+            send(create_socket, buffer, strlen(buffer), 0);
+
+            int size = recv(create_socket, buffer, BUF - 1, 0);
+
+            result_code = buffer;
+
+            if (size > 0) {
+                buffer[size] = '\0';
+                printf("%s", buffer);
+            }
+
+            std::string code = result_code.substr(0, 3);
+
+            if (!code.compare("250")) {
+                break;
+            }
+
+        }
+    }
+
     printf("SEND: Senden einer Nachricht vom Client zum Server.\n"
            "LIST: Auflisten der Nachrichten eines Users. Es soll die Anzahl der\n"
            "Nachrichten und pro Nachricht die Betreff Zeile angezeigt werden.\n"
@@ -56,28 +89,22 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     do {
-        //memset(&clientData, 0, BUF);
-        //fflush(stdin);
         printf("Enter command: ");
         fflush(stdout);
         fgets(clientData, BUF, stdin);
 
         if (strcmp(clientData, "SEND\n") == 0) {
-            strcpy(buffer,request_send());
-        }
-        else if (strcmp(clientData, "LIST\n") == 0) {
-            strcpy(buffer,request_list());
-        }
-        else if (strcmp(clientData, "READ\n") == 0) {
-            strcpy(buffer,request_read_or_del("READ"));
-        }
-        else if (strcmp(clientData, "DEL\n") == 0) {
-            strcpy(buffer,request_read_or_del("DEL"));
-        }
-        else if (strcmp(clientData, "QUIT\n") == 0) {
-            strcpy(buffer,clientData);
+            strcpy(buffer, request_send());
+        } else if (strcmp(clientData, "LIST\n") == 0) {
+            strcpy(buffer, request_list());
+        } else if (strcmp(clientData, "READ\n") == 0) {
+            strcpy(buffer, request_read_or_del("READ"));
+        } else if (strcmp(clientData, "DEL\n") == 0) {
+            strcpy(buffer, request_read_or_del("DEL"));
+        } else if (strcmp(clientData, "QUIT\n") == 0) {
+            strcpy(buffer, clientData);
             break;
-        }else {
+        } else {
             printf("\nPLEASE ENTER VALID COMMAND TO CONTINUE:\nSEND--LIST--READ--DEL--QUIT\n");
             continue;
         }
@@ -92,11 +119,11 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
+
 void receive_from_server(int create_socket, char *buffer) {
     int size = recv(create_socket, buffer, BUF - 1, 0);
     if (size > 0) {
         buffer[size] = '\0';
         printf("%s", buffer);
     }
-
 }
