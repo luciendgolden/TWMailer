@@ -6,6 +6,7 @@
 #define SERVER_THREAD_ARGS_H
 
 struct thread_args {
+    struct sockaddr_in client_address;
     int *new_socket;
     const char *path;
 };

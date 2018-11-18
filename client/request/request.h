@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstring>
 #include <regex>
+#include <termios.h>
 
 char *request_send();
 
@@ -29,11 +30,21 @@ char *request_login() {
     std::string final;
     std::string username;
     std::string password;
+    termios oldt;
 
     getUserInput(username, "Username: ", 8);
 
+    tcgetattr(STDIN_FILENO, &oldt);
+    termios newt = oldt;
+    newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
     std::cout << "Password: ";
     std::getline(std::cin >> std::ws, password);
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    printf("\n");
 
     final.append("LOGIN\n");
     final.append(username);

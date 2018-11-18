@@ -13,6 +13,8 @@
 #include "../commons/helper.h"
 #include "../commons/thread_args.h"
 
+pthread_mutex_t print_lock;
+
 void send_data(int sockfd, const char *data);
 
 void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path);
@@ -25,6 +27,10 @@ void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path);
 
 void respond_to_client(int client_sockfd, char *data, std::string path);
 
+void *handle_mail(void *params);
+
+std::vector<struct in_addr> blacklist;
+
 string_code hashit(char *);
 
 #define BUF 1024
@@ -33,21 +39,37 @@ string_code hashit(char *);
 void *handle_mail(void *params) {
     int client_sockfd, len;
     char buf[BUF];
+    int loginAttempts = 1;
 
     std::string loged_in_sender;
     bool loged_in;
 
+    struct sockaddr_in client_address = ((struct thread_args *) params)->client_address;
     std::string localSpoolpath = ((struct thread_args *) params)->path;
     client_sockfd = *(((struct thread_args *) params)->new_socket);
 
     while (1) {
         memset(buf, 0, sizeof(buf));
+
+        if (client_sockfd <= 0) {
+            return 0;
+        }
+
+        for (auto &&entry:blacklist) {
+            if (client_address.sin_addr.s_addr == entry.s_addr) {
+                close(client_sockfd);
+                return 0;
+            }
+        }
+
         len = recv(client_sockfd, buf, (BUF - 1), 0);
+
 
         if (len > 0) {
             printf("Message received: \n%s\n", buf);
 
-            if(!loged_in) {
+            if (!loged_in) {
+                pthread_mutex_lock(&print_lock);
                 //check buffer credentials with ldap-server
                 std::string username;
                 std::string password;
@@ -58,21 +80,35 @@ void *handle_mail(void *params) {
                 std::getline(strm, password);
 
 
-                //
+                //add counter for login trys
+                //when counter bigger than 3 oder so
+                // add die client address auf einen vector of client addresses (blacklist)
 
-                if(std::strcmp(username.c_str(),"if17b052") == 0 &&
-                      std::strcmp(password.c_str(), "abcd") == 0  ){
+                if (loginAttempts >= 3) {
+                    send_data(client_sockfd, reply_code[29]);
+                    blacklist.push_back(client_address.sin_addr);
+                    close(client_sockfd);
+                    pthread_mutex_unlock(&print_lock);
+                    return 0;
+                }
+
+                if (std::strcmp(username.c_str(), "if17b052") == 0 &&
+                    std::strcmp(password.c_str(), "abcd") == 0) {
                     //success
                     send_data(client_sockfd, reply_code[6]);
-                    loged_in=true;
+                    loged_in = true;
+                    pthread_mutex_unlock(&print_lock);
                     continue;
                 } else {
                     //err
-                    send_data(client_sockfd, reply_code[28]);
+                    send_data(client_sockfd, reply_code[19]);
+                    pthread_mutex_unlock(&print_lock);
+                    loginAttempts++;
                 }
             } else {
-            // if user loged in give sender
-                respond_to_client(client_sockfd, buf, localSpoolpath);}
+                // if user loged in give sender
+                respond_to_client(client_sockfd, buf, localSpoolpath);
+            }
         } else if (len == 0) {
             printf("Client closed remote socket\n");
             break;
@@ -80,10 +116,8 @@ void *handle_mail(void *params) {
             perror("recv error");
         }
     }
-
     close(client_sockfd);
-
-    return NULL;
+    return 0;
 }
 
 void respond_to_client(int client_sockfd, char *data, std::string path) {
@@ -115,6 +149,7 @@ void respond_to_client(int client_sockfd, char *data, std::string path) {
 void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) {
     // TODO - read further lines
     // TODO - check if recipient directory
+    pthread_mutex_lock(&print_lock);
     std::string sender;
     std::string recipient;
     std::string subject;
@@ -139,9 +174,12 @@ void mail_to_send(int client_sockfd, std::stringstream &strm, std::string path) 
         send_data(client_sockfd, reply_code[6]);
     else
         send_data(client_sockfd, reply_code[28]);
+
+    pthread_mutex_unlock(&print_lock);
 }
 
 void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path) {
+    pthread_mutex_lock(&print_lock);
     int count;
     std::string response;
     std::string all_subject;
@@ -171,9 +209,11 @@ void mails_to_list(int client_sockfd, std::stringstream &strm, std::string path)
         send_data(client_sockfd, "0");
     }
 
+    pthread_mutex_unlock(&print_lock);
 }
 
 void mails_to_read(int client_sockfd, std::stringstream &strm, std::string path) {
+    pthread_mutex_lock(&print_lock);
     std::string response;
     std::string msg_number;
     std::string username;
@@ -192,9 +232,11 @@ void mails_to_read(int client_sockfd, std::stringstream &strm, std::string path)
     } else {
         send_data(client_sockfd, reply_code[28]);
     }
+    pthread_mutex_unlock(&print_lock);
 }
 
 void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path) {
+    pthread_mutex_lock(&print_lock);
     int msg_num;
     int count;
     std::string response;
@@ -239,6 +281,7 @@ void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path) 
     } else {
         send_data(client_sockfd, reply_code[28]);
     }
+    pthread_mutex_unlock(&print_lock);
 }
 
 
@@ -257,6 +300,47 @@ string_code hashit(char *inString) {
     if (strcmp(inString, "DEL") == 0) return eDel;
 
     return eNone;
+}
+
+static ssize_t
+my_read(int fd, char *ptr) {
+    static int read_cnt = 0;
+    static char *read_ptr;
+    static char read_buf[MAXLINE];
+    if (read_cnt <= 0) {
+        again:
+        if ((read_cnt = read(fd, read_buf, sizeof(read_buf))) < 0) {
+            if (errno == EINTR)
+                goto again;
+            return (-1);
+        } else if (read_cnt == 0)
+            return (0);
+        read_ptr = read_buf;
+    };
+    read_cnt--;
+    *ptr = *read_ptr++;
+    return (1);
+}
+
+ssize_t readline(int fd, void *vptr, size_t maxlen) {
+    ssize_t n, rc;
+    char c, *ptr;
+    ptr = static_cast<char *>(vptr);
+    for (n = 1; n < maxlen; n++) {
+        if ((rc = my_read(fd, &c)) == 1) {
+            *ptr++ = c;
+            if (c == '\n')
+                break;
+        } else if (rc == 0) {
+            if (n == 1)
+                return (0);
+            else
+                break;
+        } else
+            return (-1);
+    };
+    *ptr = 0;
+    return (n);
 }
 
 #endif //SERVER_MAIL_HANDLER_H

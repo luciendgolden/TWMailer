@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
     // login user
     // if user is not loged in
     while (1) {
+        memset(buffer, 0, sizeof(buffer));
         std::string result_code;
 
         printf("Please Log in: ");
@@ -125,5 +126,10 @@ void receive_from_server(int create_socket, char *buffer) {
     if (size > 0) {
         buffer[size] = '\0';
         printf("%s", buffer);
+    }else if(size==0){
+        printf("Server closed connection!");
+        fflush(stdout);
+        close(create_socket);
+        exit(0);
     }
 }
