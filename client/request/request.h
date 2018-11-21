@@ -11,6 +11,7 @@
 #include <cstring>
 #include <regex>
 #include <termios.h>
+#include <unistd.h>
 
 char *request_send();
 
