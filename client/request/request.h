@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstring>
 #include <regex>
+#include <termios.h>
 
 char *request_send();
 
@@ -20,6 +21,39 @@ char *request_read_or_del(std::string option);
 void getUserInput(std::string &str, std::string name, int length);
 
 bool validate(std::string str, int length);
+
+char *request_login();
+
+
+char *request_login() {
+    char myarray[8 + 128 + 1];
+    std::string final;
+    std::string username;
+    std::string password;
+    termios oldt;
+
+    getUserInput(username, "Username: ", 8);
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    termios newt = oldt;
+    newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    std::cout << "Password: ";
+    std::getline(std::cin >> std::ws, password);
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    printf("\n");
+
+    final.append("LOGIN\n");
+    final.append(username);
+    final.append("\n");
+    final.append(password);
+    strcpy(myarray, final.c_str());
+
+    return myarray;
+}
 
 char *request_read_or_del(std::string option) {
     // unsigned int + username + \n + \0

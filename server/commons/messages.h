@@ -26,7 +26,7 @@ const char reply_code[][100]={
         {"503 Error: bad sequence of commands\r\n"}, //16
         {"504 Error: command parameter not implemented\r\n"},  //17
         {"521 <domain>%s does not accept mail (see rfc1846)\r\n"},  //18
-        {"530 Access denied (???a Sendmailism)\r\n"},  //19
+        {"530 Access denied\r\n"},  //19
         {"550 Requested action not taken: mailbox unavailable\r\n"},  //20
         {"551 User not local; please try <forward-path>%s\r\n"},  //21
         {"552 Requested mail action aborted: exceeded storage allocation\r\n"},  //22
@@ -36,7 +36,9 @@ const char reply_code[][100]={
         {"334 dXNlcm5hbWU6\r\n"},  //25, "dXNlcm5hbWU6" is "username:"'s base64 code
         {"334 UGFzc3dvcmQ6\r\n"},  //26, "UGFzc3dvcmQ6" is "Password:"'s base64 code
         {"235 Authentication successful\r\n"}, //27
-        {"505 ERR\r\n"}  //28
+        {"505 ERR\r\n"},  //28
+        {"506 Too many failed login attempts, ip address will be locked\r\n"},  //29
+        {"507 You are banned\r\n"}  //30
 };
 
 #endif //SERVER_MESSAGES_H

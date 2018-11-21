@@ -6,6 +6,7 @@
 #define SERVER_STRING_CODE_H
 
 enum string_code {
+    eLogin,
     eSend,
     eList,
     eRead,

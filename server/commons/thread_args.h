@@ -5,7 +5,10 @@
 #ifndef SERVER_THREAD_ARGS_H
 #define SERVER_THREAD_ARGS_H
 
+#include <netinet/in.h>
+
 struct thread_args {
+    struct sockaddr_in client_address;
     int *new_socket;
     const char *path;
 };
