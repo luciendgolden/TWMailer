@@ -10,6 +10,7 @@
 #include <string>
 #include <dirent.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <sys/stat.h>
 #include <fstream>
@@ -64,9 +65,6 @@ check_for_user_dir(const char *searchPath, int localRecursive, int localIgnoreCa
 
             //same without -i (not true)
         } else if (strcmp(myLocalFileToFind, direntp->d_name) == 0) {
-            printf("++Process: %d -> Found File directory: %s/%s\n", getpid(), searchPath,
-                   direntp->d_name);
-            fflush(stdout);
             while ((closedir(dirp) == -1) && (errno == EINTR));
 
             return 1;
