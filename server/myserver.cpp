@@ -27,6 +27,8 @@ std::vector<pthread_t> threadVector;
 
 extern pthread_mutex_t print_lock;
 
+extern std::vector<struct in_addr> blacklist;
+
 //signal handler
 void myhandler(int sig) {
     printf("\nS:Caught signal (%d). Mail server shutting down...\n\n", sig);
@@ -36,19 +38,21 @@ void myhandler(int sig) {
     //joining all threads before
 
     if (threadVector.size() > 0) {
-        for (auto &&vec :threadVector) {
-            printf("\njoined a thread");
-            fflush(stdout);
+        for (auto &vec :threadVector) {
             pthread_cancel(vec);
+            printf("\nCanceled a thread");
+            fflush(stdout);
         }
     }
 
     //Vektor über clientsockets alle closen
     if (clientSockVector.size() > 0) {
         for (auto &&client :clientSockVector) {
-            printf("\nclosed a client socket");
-            fflush(stdout);
-            close(client);
+            if (client > 0) {
+                printf("\nclosed a client socket");
+                fflush(stdout);
+                close(client);
+            }
         }
     }
 

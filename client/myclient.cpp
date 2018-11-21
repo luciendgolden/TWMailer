@@ -53,31 +53,28 @@ int main(int argc, char **argv) {
         memset(buffer, 0, sizeof(buffer));
         std::string result_code;
 
-        printf("Please Log in: ");
-        fflush(stdout);
-        fgets(clientData, BUF, stdin);
+        strcpy(buffer, request_login());
 
-        if (strcmp(clientData, "LOGIN\n") == 0) {
-            strcpy(buffer, request_login());
+        send(create_socket, buffer, strlen(buffer), 0);
+
+        int size = recv(create_socket, buffer, BUF - 1, 0);
+
+        result_code = buffer;
+
+        if (size > 0) {
+            buffer[size] = '\0';
+            printf("%s", buffer);
+        }
+
+        std::string code = result_code.substr(0, 3);
 
 
-            send(create_socket, buffer, strlen(buffer), 0);
-
-            int size = recv(create_socket, buffer, BUF - 1, 0);
-
-            result_code = buffer;
-
-            if (size > 0) {
-                buffer[size] = '\0';
-                printf("%s", buffer);
-            }
-
-            std::string code = result_code.substr(0, 3);
-
-            if (!code.compare("250")) {
-                break;
-            }
-
+        if(!code.compare("506")) {
+            exit(EXIT_FAILURE);
+        }else if(!code.compare("507")) {
+            exit(EXIT_FAILURE);
+        }else if (!code.compare("250")) {
+            break;
         }
     }
 
@@ -126,7 +123,7 @@ void receive_from_server(int create_socket, char *buffer) {
     if (size > 0) {
         buffer[size] = '\0';
         printf("%s", buffer);
-    }else if(size==0){
+    } else if (size == 0) {
         printf("Server closed connection!");
         fflush(stdout);
         close(create_socket);

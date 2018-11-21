@@ -37,7 +37,8 @@ const char reply_code[][100]={
         {"334 UGFzc3dvcmQ6\r\n"},  //26, "UGFzc3dvcmQ6" is "Password:"'s base64 code
         {"235 Authentication successful\r\n"}, //27
         {"505 ERR\r\n"},  //28
-        {"506 Too many failed login attempts, ip address will be locked\r\n"}  //29
+        {"506 Too many failed login attempts, ip address will be locked\r\n"},  //29
+        {"507 You are banned\r\n"}  //30
 };
 
 #endif //SERVER_MESSAGES_H

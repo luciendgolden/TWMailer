@@ -8,12 +8,17 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <netinet/in.h>
+#include <vector>
 #include "../commons/string_code.h"
 #include "../commons/messages.h"
 #include "../commons/helper.h"
 #include "../commons/thread_args.h"
+#include "../commons/ldap.h"
 
 pthread_mutex_t print_lock;
+
+std::vector<struct in_addr> blacklist;
 
 void send_data(int sockfd, const char *data);
 
@@ -28,8 +33,6 @@ void mails_to_del(int client_sockfd, std::stringstream &strm, std::string path);
 void respond_to_client(int client_sockfd, char *data, std::string path);
 
 void *handle_mail(void *params);
-
-std::vector<struct in_addr> blacklist;
 
 string_code hashit(char *);
 
@@ -55,8 +58,11 @@ void *handle_mail(void *params) {
             return 0;
         }
 
-        for (auto &&entry:blacklist) {
-            if (client_address.sin_addr.s_addr == entry.s_addr) {
+        std::vector<struct in_addr>::const_iterator it;
+
+        for(it = blacklist.begin(); it != blacklist.end(); it++)    {
+            if (client_address.sin_addr.s_addr == it.base()->s_addr) {
+                send_data(client_sockfd, reply_code[30]);
                 close(client_sockfd);
                 return 0;
             }
@@ -92,6 +98,19 @@ void *handle_mail(void *params) {
                     return 0;
                 }
 
+                if(my_login(username, password)){
+                    send_data(client_sockfd, reply_code[6]);
+                    loged_in = true;
+                    pthread_mutex_unlock(&print_lock);
+                    continue;
+                }else {
+                    //err
+                    send_data(client_sockfd, reply_code[19]);
+                    pthread_mutex_unlock(&print_lock);
+                    loginAttempts++;
+                }
+
+                /*
                 if (std::strcmp(username.c_str(), "if17b052") == 0 &&
                     std::strcmp(password.c_str(), "abcd") == 0) {
                     //success
@@ -105,6 +124,7 @@ void *handle_mail(void *params) {
                     pthread_mutex_unlock(&print_lock);
                     loginAttempts++;
                 }
+                */
             } else {
                 // if user loged in give sender
                 respond_to_client(client_sockfd, buf, localSpoolpath);
