@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
+#include <unistd.h>
 #include "request/request.h"
 
 void receive_from_server(int create_socket, char *buffer);
