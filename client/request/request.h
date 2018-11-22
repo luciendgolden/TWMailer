@@ -12,6 +12,8 @@
 #include <regex>
 #include <termios.h>
 
+extern std::string username;
+
 char *request_send();
 
 char *request_list();
@@ -28,7 +30,6 @@ char *request_login();
 char *request_login() {
     char myarray[8 + 128 + 1];
     std::string final;
-    std::string username;
     std::string password;
     termios oldt;
 
@@ -63,9 +64,9 @@ char *request_read_or_del(std::string option) {
     // 0 to 4,294,967,295
     unsigned int msg_number;
     std::string final;
-    std::string username;
 
-    getUserInput(username, "Username: ", 8);
+    //std::string username;
+    //getUserInput(username, "Username: ", 8);
 
 
     std::cout << "Nachrichten-Nummer: ";
@@ -88,9 +89,9 @@ char *request_read_or_del(std::string option) {
 char *request_list() {
     char myarray[15 + 1];
     std::string final;
-    std::string username;
 
-    getUserInput(username, "Username: ", 8);
+    //std::string username;
+    //getUserInput(username, "Username: ", 8);
 
     //TODO - check the input !!!!!
 
@@ -104,18 +105,17 @@ char *request_list() {
 
 char *request_send() {
     char myarray[642];
-    std::string final, sender, recipient, subject, message;
+    std::string final, recipient, subject, message;
 
     //TODO - check the input!!!!
 
-    getUserInput(sender, "Sender: ", 8);
     getUserInput(recipient, "Recipient: ", 8);
 
     std::cout << "Subject: ";
     std::getline(std::cin >> std::ws, subject);
 
     final.append("SEND\n");
-    final.append(sender);
+    final.append(username);
     final.append("\n");
     final.append(recipient);
     final.append("\n");

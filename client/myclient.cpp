@@ -12,7 +12,8 @@
 void receive_from_server(int create_socket, char *buffer);
 
 #define BUF 1024
-//#define PORT 6540 (argv[2])
+
+std::string username;
 
 int main(int argc, char **argv) {
     int create_socket;
