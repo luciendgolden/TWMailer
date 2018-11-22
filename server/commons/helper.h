@@ -145,6 +145,7 @@ std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int
     std::string result;
     std::string subject;
     std::string trash;
+    std::string mystring;
     bool check_counter = false;
 
     //errorhandling directory open
@@ -157,37 +158,35 @@ std::string get_msg_content(const char *searchPath, char *myLocalFileToFind, int
     //readdir -> reads next/current file
     while ((direntp = readdir(dirp)) != NULL) {
 
-        //comparing local file to find with the opened directories file
-        // ignoe ".", ".." and "counter" files
-        if (strcmp(direntp->d_name, myLocalFileToFind) == 0) {
-            check_counter = true;
-            continue;
-        }
+        mystring = direntp->d_name;
+        if (mystring.size() >= 16) {
+            if (strcmp(mystring.substr(9, 7).c_str(), "message") == 0) {
 
-        if (check_counter) {
-            if (msg_num == 1) {
-                //do da magic
-                //get file
-                std::string line;
-                std::string myString = searchPath;
-                myString.append("/");
-                myString.append(direntp->d_name);
+                if (msg_num == 1) {
+                    //do da magic
+                    //get file
+                    std::string line;
+                    std::string myString = searchPath;
+                    myString.append("/");
+                    myString.append(direntp->d_name);
 
-                is_readfromfile.open(myString);
+                    is_readfromfile.open(myString);
 
-                while (!is_readfromfile.eof()) {
-                    getline(is_readfromfile, line);
-                    result.append(line + "\n");
-                    line = "";
+                    while (!is_readfromfile.eof()) {
+                        getline(is_readfromfile, line);
+                        result.append(line + "\n");
+                        line = "";
+                    }
+                    is_readfromfile.close();
+                    break;
+                } else {
+                    msg_num--;
+                    continue;
                 }
-                is_readfromfile.close();
-                break;
-            } else {
-                msg_num--;
-                continue;
             }
         }
     }
+
     //wait for file close
     while ((closedir(dirp) == -1) && (errno == EINTR));
 

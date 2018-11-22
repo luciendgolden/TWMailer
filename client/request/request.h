@@ -22,9 +22,11 @@ char *request_read_or_del(std::string option);
 
 void getUserInput(std::string &str, std::string name, int length);
 
-bool validate(std::string str, int length);
+bool validate_with_reg_ex(std::string str, int length);
 
 char *request_login();
+
+bool validate(std::string str, int length);
 
 
 char *request_login() {
@@ -144,6 +146,10 @@ void getUserInput(std::string &str, std::string name, int length) {
 }
 
 bool validate(std::string str, int length) {
+    return str.length() == length;
+}
+
+bool validate_with_reg_ex(std::string str, int length) {
 
     std::regex rx("(if17b[0-9]{3})");
     std::match_results<std::string::const_iterator> mr;

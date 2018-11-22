@@ -58,7 +58,7 @@ void myhandler(int sig) {
 
 
     close(server_sockfd);
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
     exit(sig);
 }
 
