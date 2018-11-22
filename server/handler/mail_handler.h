@@ -109,22 +109,6 @@ void *handle_mail(void *params) {
                     pthread_mutex_unlock(&print_lock);
                     loginAttempts++;
                 }
-
-                /*
-                if (std::strcmp(username.c_str(), "if17b052") == 0 &&
-                    std::strcmp(password.c_str(), "abcd") == 0) {
-                    //success
-                    send_data(client_sockfd, reply_code[6]);
-                    loged_in = true;
-                    pthread_mutex_unlock(&print_lock);
-                    continue;
-                } else {
-                    //err
-                    send_data(client_sockfd, reply_code[19]);
-                    pthread_mutex_unlock(&print_lock);
-                    loginAttempts++;
-                }
-                */
             } else {
                 // if user loged in give sender
                 respond_to_client(client_sockfd, buf, localSpoolpath);

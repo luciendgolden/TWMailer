@@ -16,7 +16,7 @@
 #include <ldap.h>
 #include <sstream>
 
-bool login(std::string parameter_user, std::string parameter_password);
+bool my_login(std::string parameter_user, std::string parameter_password);
 
 /**
  * Login to LDAP using given user and pw and return if successful.
